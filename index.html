@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Drone Configurator</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
+<style>
+:root{
+  /* Light theme palette */
+  --bg:#f7ffff;           /* requested background */
+  --panel:#ffffff;        /* cards */
+  --panel-2:#f1f7ff;      /* subtle gradient stop */
+  --text:#282266;         /* requested text */
+  --muted:#5a6b8a;        /* secondary text */
+  --accent:#3a6ff8;       /* crisp blue */
+  --line:rgba(20,26,50,.12); /* hairline borders */
+  --shadow:0 10px 28px rgba(16,24,40,.10);
+  --radius:16px; --radius-sm:12px;
+  --s-1:6px; --s0:12px; --s1:16px; --s2:22px; --s3:28px; --s4:40px; --s5:56px;
+  --ok-bg:#e8fff3; --ok-border:#18a874; --ok-text:#0e5a3f;
+  --warn-bg:#fff6e8; --warn-border:#ff9f2a; --warn-text:#7a4a00;
+}
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'>\
+<g transform='rotate(-30 150 150)'><text x='0' y='160' font-size='36' font-family='Arial' fill='%23282266' fill-opacity='0.08'>DO NOT COPY</text></g>\
+</svg>");
+  background-size:300px 300px;
+}
+/* ====== /WATERMARK ====== */
+
+*{box-sizing:border-box}
+body{
+  margin:0; color:var(--text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(58,111,248,.06), transparent 60%),
+    radial-gradient(900px 600px at 110% 10%, rgba(58,215,228,.06), transparent 60%),
+    var(--bg);
+  font-family: Arial, Helvetica, sans-serif;
+  line-height:1.55; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+a{color:var(--accent); text-decoration:none}
+a:hover{text-decoration:underline}
+
+header{padding:var(--s5) var(--s3) var(--s2); text-align:center}
+h1{margin:0 0 var(--s1); font-size: clamp(1.6rem, 1rem + 1.4vw, 2.2rem)}
+
+main{max-width:1080px; margin:0 auto; padding:0 var(--s3) var(--s5)}
+
+.card{
+  background:linear-gradient(180deg, var(--panel), var(--panel-2));
+  border:1px solid var(--line); border-radius:var(--radius);
+  padding:var(--s3); margin: var(--s4) 0; box-shadow:var(--shadow);
+}
+
+.small{font-size:.92rem; color:var(--muted)}
+.actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:var(--s2)}
+button{
+  background:linear-gradient(180deg, var(--accent), #2f59c8);
+  color:#ffffff; border:none; border-radius:var(--radius-sm); padding:13px 18px; font-weight:700; cursor:pointer;
+  transition:transform .06s, filter .2s, box-shadow .2s; box-shadow:0 8px 18px rgba(58,111,248,.25);
+}
+button:hover{filter:brightness(1.05)} button:active{transform:translateY(1px)}
+button.secondary{background:#e8eefc; color:#1f2a69; box-shadow:0 8px 18px rgba(16,24,40,.08); border:1px solid var(--line)}
+
+/* LARGE square dropdowns (used for Qs and build selector) */
+.qblock{margin-bottom: var(--s2)}
+.qtitle{display:block; font-weight:800; font-size:1.18rem; margin-bottom:12px; letter-spacing:.2px}
+select{
+  width:100%; padding:18px 16px; border-radius:0;
+  background:#ffffff; border:1px solid var(--line); color:var(--text);
+  outline:0; font-size:1.06rem; transition:border-color .2s, box-shadow .2s;
+}
+select:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(58,111,248,.20)}
+
+/* Result sections */
+.section-title{margin: var(--s3) 0 var(--s1); font-weight:800; font-size:1.08rem; letter-spacing:.2px; color:#1f2a69}
+.kv{
+  display:flex; justify-content:space-between; gap:12px; padding:14px 16px;
+  background:#fbfdff; border:1px solid var(--line); border-radius:12px
+}
+.grid{display:grid; gap:14px}
+@media (min-width:760px){ .grid{grid-template-columns:repeat(2,1fr)} }
+
+.warn,.ok{border-radius:12px; padding:12px 14px; margin-bottom:8px; border:1px solid transparent}
+.warn{border-left:4px solid var(--warn-border); background:var(--warn-bg); color:var(--warn-text); border-color:rgba(255,159,42,.25)}
+.ok{border-left:4px solid var(--ok-border); background:var(--ok-bg); color:var(--ok-text); border-color:rgba(24,168,116,.2)}
+
+.pill{display:inline-block; padding:2px 8px; border-radius:999px; background:#eaf1ff; color:#2640a5; font-size:.8rem; margin-left:8px}
+.badge{display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; background:#eaf7ff; color:#0c4a68; font-size:.78rem; border:1px solid var(--line)}
+
+/* Profile & Reasons: aligned columns */
+.profile{display:grid; gap:10px; margin:8px 0 14px}
+.profile .row{
+  display:grid; grid-template-columns: 280px 1fr; gap:16px; align-items:start;
+  padding:12px 14px; background:#fbfdff; border:1px solid var(--line); border-radius:12px
+}
+.profile .q{color:#3b4a78; font-weight:800}
+
+/* Detailed Breakdown */
+.break-grid{display:grid; gap:12px}
+.break-grid .line{
+  display:grid; grid-template-columns: 1.2fr .6fr .6fr; gap:12px;
+  padding:12px 14px; background:#fbfdff; border:1px solid var(--line); border-radius:12px
+}
+.break-grid .hdr{background:#eef4ff; font-weight:800}
+.total-line{
+  display:grid; grid-template-columns: 1.2fr .6fr .6fr; gap:12px;
+  padding:14px; border:1px solid var(--line); border-radius:12px; background:#eef7ff
+}
+footer{color:#61708f}
+</style>
+</head>
+<body>
+<header>
+  <h1>Drone Configurator</h1>
+  <div class="small">Answer 10 quick questions → pick <strong>Overall / Performance / Budget</strong> → get parts, a detailed breakdown, and specific reasons per component.</div>
+</header>
+
+<main>
+  <form id="quiz" class="card">
+    <!-- 1) Budget -->
+    <div class="qblock">
+      <span class="qtitle">1) Budget (complete build)</span>
+      <select id="budget">
+        <option value="tier1">&lt;£200</option>
+        <option value="tier2" selected>£200–£500</option>
+        <option value="tier3">£500–£1000</option>
+      </select>
+      <div class="small" style="margin-top:8px">Includes frame, stack, FPV, motors, battery.</div>
+    </div>
+
+    <!-- 2) Build complexity -->
+    <div class="qblock">
+      <span class="qtitle">2) Build complexity</span>
+      <select id="complexity">
+        <option value="rtf">No experience</option>
+        <option value="pnp" selected>Some experience</option>
+        <option value="custom">Very experienced</option>
+      </select>
+    </div>
+
+    <!-- 3) Speed priority -->
+    <div class="qblock">
+      <span class="qtitle">3) Speed priority</span>
+      <select id="speed">
+        <option value="max">Maximum top speed</option>
+        <option value="balanced" selected>Balanced</option>
+        <option value="stable">Stability / smoothness</option>
+      </select>
+    </div>
+
+    <!-- 4) Frame size -->
+    <div class="qblock">
+      <span class="qtitle">4) Frame size (motor-to-motor diagonal)</span>
+      <select id="size">
+        <option value="micro">&lt;150 mm (tiny whoop/micro)</option>
+        <option value="3to4" selected>150–250 mm (3–4″)</option>
+        <option value="5to7">250–450 mm (5–7″)</option>
+        <option value="xclass">&gt;450 mm (X-class)</option>
+      </select>
+    </div>
+
+    <!-- 5) Handling style -->
+    <div class="qblock">
+      <span class="qtitle">5) Handling style</span>
+      <select id="handling">
+        <option value="agile" selected>Agility / quick response</option>
+        <option value="smooth">Smooth / cinematic</option>
+      </select>
+    </div>
+
+    <!-- 6) FPV video quality -->
+    <div class="qblock">
+      <span class="qtitle">6) FPV video quality</span>
+      <select id="fpv">
+        <option value="low">Low (Analog)</option>
+        <option value="medium" selected>Medium (Digital HD)</option>
+        <option value="high">High (Digital Ultra-HD)</option>
+      </select>
+    </div>
+
+    <!-- 7) Regulatory -->
+    <div class="qblock">
+      <span class="qtitle">7) Regulatory compliance: OK with &gt;250 g?</span>
+      <select id="regs">
+        <option value="ok" selected>Yes (no strict weight cap)</option>
+        <option value="under">No (must stay &lt;250 g AUW)</option>
+      </select>
+    </div>
+
+    <!-- 8) Skill level -->
+    <div class="qblock">
+      <span class="qtitle">8) Pilot skill level</span>
+      <select id="skill">
+        <option value="beginner">Beginner</option>
+        <option value="intermediate" selected>Intermediate</option>
+        <option value="advanced">Advanced</option>
+      </select>
+    </div>
+
+    <!-- 9) Purpose -->
+    <div class="qblock">
+      <span class="qtitle">9) Primary purpose</span>
+      <select id="purpose">
+        <option value="racing">Racing</option>
+        <option value="freestyle" selected>Freestyle</option>
+        <option value="cinematic">Cinematic filming</option>
+      </select>
+    </div>
+
+    <!-- 10) Flying environment -->
+    <div class="qblock">
+      <span class="qtitle">10) Flying environment</span>
+      <select id="env">
+        <option value="indoors">Indoors / tight spaces</option>
+        <option value="parks" selected>Small parks / open fields</option>
+        <option value="open">Large open areas / mountains / coast</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="buildBtn">Build Recommendations</button>
+      <button type="reset" class="secondary" id="resetBtn">Reset</button>
+    </div>
+  </form>
+
+  <section id="out" class="card" style="display:none">
+    <h2 style="margin:0 0 12px">Your Builds
+      <span id="optBadge" class="pill" style="display:none">Optimised for &lt;250g</span>
+      <span id="poolBadge" class="badge" title="Total options considered">options</span>
+    </h2>
+
+    <div id="conflicts"></div>
+
+    <div class="section-title">Profile</div>
+    <div id="profileList" class="profile"></div>
+
+    <!-- Build focus selector (styled like questions) -->
+    <div id="focusWrap" class="qblock" style="display:none">
+      <span class="qtitle">Choose your build</span>
+      <select id="buildFocus">
+        <option value="overall" selected>Overall best</option>
+        <option value="performance">Best performance</option>
+        <option value="budget">Most budget friendly</option>
+      </select>
+    </div>
+
+    <div class="section-title">Parts</div>
+    <div class="grid" id="partsGrid"></div>
+
+    <div class="section-title">Detailed Breakdown</div>
+    <div class="break-grid" id="breakGrid"></div>
+    <div id="weightNote" class="small" style="margin-top:6px"></div>
+
+    <div class="section-title">Why we chose this</div>
+    <div id="whyList" class="profile"></div>
+  </section>
+
+  <footer class="small">Weights & prices are estimates. Always verify specs and local pricing.</footer>
+</main>
+
+<script>
+/* ===================== Small helpers ===================== */
+const $ = s => document.querySelector(s);
+function range(start,end,step){ const arr=[]; for(let k=start;k<=end;k+=step) arr.push(k); return arr; }
+
+/* ===================== Baselines (for AUW/£) ===================== */
+const Archetype = {
+  frames:{ micro_whoop:{w:8,price:12}, micro_duct25:{w:125,price:70}, three_inch:{w:65,price:45}, five_freestyle:{w:135,price:85}, five_race:{w:80,price:35}, six_lr:{w:180,price:95}, seven_lr:{w:230,price:125}, xclass:{w:500,price:180} },
+  motors:{ micro_1s:{w_each:2,price_each:11}, micro_2s3s:{w_each:8.5,price_each:16}, five_freestyle:{w_each:30,price_each:23}, five_race:{w_each:31,price_each:27}, six_inch:{w_each:39,price_each:26}, seven_inch:{w_each:54,price_each:35}, xclass:{w_each:122,price_each:50} },
+  props:{ whoop:{w_set:2,price:3}, cine25:{w_set:10,price:5}, three:{w_set:6,price:3.5}, four:{w_set:8,price:3.5}, five_race:{w_set:10,price:3.5}, five_smooth:{w_set:10,price:3.5}, six:{w_set:14,price:4}, seven:{w_set:19,price:4.5}, xclass:{w_set:80,price:18} },
+  stacks:{ micro_aio:{w:6,price:35}, mamba_20:{w:32,price:45}, f7_std:{w:46,price:70}, premium:{w:52,price:120} },
+  fpv:{ analog:{w:18,price:55}, hd_mid:{w:28,price:155}, hd_ultra:{w:36,price:210} },
+  batteries:{ oneS:{w:13,price:6.5}, twoS:{w:48,price:10}, threeS:{w:70,price:15}, fourS_1300:{w:160,price:22}, sixS_1200:{w:200,price:28}, sixS_1500:{w:230,price:35}, sixS_2150:{w:320,price:45}, lr_pack:{w:340,price:48}, xclass:{w:900,price:140} },
+  misc:{ micro:10, small:20, five:30, seven:45, xclass:120, price:{ micro:8, small:12, five:18, seven:25, xclass:50 } }
+};
+
+/* ===================== Budget caps by tier (strict) ===================== */
+const BUDGET_CAPS = { tier1: 200, tier2: 500, tier3: 1000 };
+
+/* ===================== Big Pools (1000+ options) ===================== */
+/* Frames */
+const BaseFrames=[["BetaFPV Meteor75","micro"],["Happymodel Mobula6 FR","micro"],["GEPRC CineLog25","cine25"],["BetaFPV Pavo25","cine25"],["iFlight Protek25","cine25"],["Flywoo Explorer LR 4","3to4"],["GEPRC Smart 4","3to4"],["TBS Source One V5","5"],["ImpulseRC Apex 5","5"],["Armattan Marmotte 5","5"],["Foxeer Master 5","5"],["GEPRC Mark5","5"],["AOS 5 EVO","5"],["Lumenier QAV-R 2","5"],["Rotor Riot CL1","5"],["Hyperlite Floss 3.0","5"],["Diatone Roma F5","5"],["Nazgul Evoque F5 (frame)","5"],["AOS 5.5/6","6"],["Rekon 5 LR","5"],["AOS 7","7"],["AOS 7 Pro","7"],["iFlight Chimera7 Pro","7"],["FPV Combat X-Class","x"]];
+function frameVariant(cls){ return cls==="micro"?{w:8,price:12}:cls==="cine25"?{w:125,price:70}:cls==="3to4"?{w:65,price:45}:cls==="5"?{w:135,price:85}:cls==="6"?{w:180,price:95}:cls==="7"?{w:230,price:125}:{w:500,price:180}; }
+let FramePool=[];
+BaseFrames.forEach(([name,cls])=>{
+  [""," DC"," HD"," Lite"].forEach(s=>{
+    const b=frameVariant(cls);
+    FramePool.push({name:name+(s?` ${s}`:""), class:cls, w:b.w+(s===" Lite"?-5:0)+(s===" HD"?5:0), price:b.price+(s===" HD"?10:0)+(s===" Lite"?-5:0), type: cls==="cine25"?"duct": (cls==="5"&&name.includes("Floss")?"race": (cls==="7"||cls==="6"||name.includes("LR")?"lr":"freestyle"))});
+  });
+});
+
+/* Motors */
+const MotorFamilies=[
+  {brand:"EMAX",model:"ECO II 2306",class:"5",kvRange:[1600,2500],step:50,w_each:29,price_each:16,tags:["freestyle"]},
+  {brand:"EMAX",model:"ECO II 2207",class:"5",kvRange:[1600,2500],step:50,w_each:30,price_each:17,tags:["freestyle"]},
+  {brand:"iFlight",model:"XING 2207",class:"5",kvRange:[1700,2300],step:50,w_each:31,price_each:22,tags:["freestyle"]},
+  {brand:"iFlight",model:"XING2 2207",class:"5",kvRange:[1750,2250],step:50,w_each:31,price_each:24,tags:["freestyle"]},
+  {brand:"RCINPower",model:"GTS V3 2207",class:"5",kvRange:[1800,2500],step:50,w_each:31,price_each:26,tags:["freestyle","race"]},
+  {brand:"BrotherHobby",model:"R6 2306",class:"5",kvRange:[1700,2500],step:50,w_each:29,price_each:23,tags:["freestyle"]},
+  {brand:"Lumenier",model:"POPO 2207",class:"5",kvRange:[1800,2200],step:50,w_each:30,price_each:25,tags:["cinematic","freestyle"]},
+  {brand:"T-Motor",model:"F60 Pro V",class:"5",kvRange:[1900,2500],step:50,w_each:31,price_each:28,tags:["race"]},
+  {brand:"T-Motor",model:"F40 Pro V",class:"5",kvRange:[1900,2500],step:50,w_each:30,price_each:26,tags:["race","freestyle"]},
+  {brand:"T-Motor",model:"Pacer P2207",class:"5",kvRange:[1700,2000],step:50,w_each:32,price_each:27,tags:["cinematic","freestyle"]},
+  {brand:"GEPRC",model:"GR1404",class:"3to4",kvRange:[2600,3200],step:50,w_each:8.5,price_each:16,tags:["lr"]},
+  {brand:"T-Motor",model:"1505",class:"3to4",kvRange:[2700,3400],step:50,w_each:11,price_each:20,tags:["punch"]},
+  {brand:"RCINPower",model:"GTS 1507",class:"3to4",kvRange:[2600,3300],step:50,w_each:13,price_each:20,tags:["cine","freestyle"]},
+  {brand:"Happymodel",model:"SE0802",class:"micro",kvRange:[18000,23000],step:1000,w_each:2,price_each:11,tags:["whoop"]},
+  {brand:"BetaFPV",model:"1102",class:"micro",kvRange:[13000,20000],step:1000,w_each:3.3,price_each:13,tags:["whoop"]},
+  {brand:"Generic",model:"2507",class:"6",kvRange:[1500,1800],step:50,w_each:39,price_each:26,tags:["lr"]},
+  {brand:"BrotherHobby",model:"Avenger 2806.5",class:"7",kvRange:[1200,1600],step:50,w_each:50,price_each:30,tags:["lr"]},
+  {brand:"T-Motor",model:"2808",class:"7",kvRange:[1100,1400],step:50,w_each:58,price_each:36,tags:["lr","wind"]},
+  {brand:"Hobbywing",model:"XRotor X8 4112",class:"x",kvRange:[400,400],step:1,w_each:125,price_each:55,tags:["x"]},
+  {brand:"Generic",model:"4114",class:"x",kvRange:[400,520],step:40,w_each:120,price_each:50,tags:["x"]}
+];
+const MotorPool = MotorFamilies.flatMap(f => range(f.kvRange[0], f.kvRange[1], f.step).map(kv => ({ name:`${f.brand} ${f.model} ${kv}KV`, class:f.class, kv, w_each:f.w_each, price_each:f.price_each, tags:f.tags })));
+
+/* Props */
+const PropBrands=[{brand:"HQ",series:["S3","S4","J37"]},{brand:"Gemfan",series:["51477","5236","51466","Hulkie"]},{brand:"Ethix",series:["P3","S3","S4"]}];
+const PropSizes=[
+  {cls:"whoop",sizes:["whoop"],pitches:["std"],w:2,price:3,tags:["whoop"]},
+  {cls:"cine25",sizes:["2.5"],pitches:["ducted"],w:10,price:5,tags:["cine"]},
+  {cls:"3to4",sizes:["3","4"],pitches:["2.6","3.0","3.1","3.5"],w:7,price:3.5,tags:["freestyle","lr"]},
+  {cls:"5",sizes:["5"],pitches:["3.1","3.5","4.0","4.1","4.3","4.6","4.7","5.0"],w:10,price:3.5,tags:["race","smooth","freestyle"]},
+  {cls:"6",sizes:["6"],pitches:["3.0","3.5"],w:14,price:4,tags:["lr"]},
+  {cls:"7",sizes:["7"],pitches:["3.5","4.0"],w:19,price:4.5,tags:["lr","wind"]},
+  {cls:"x",sizes:["13","14","15"],pitches:["4.8"],w:80,price:18,tags:["x"]}
+];
+let PropPool=[];
+PropSizes.forEach(ps=>{
+  ps.sizes.forEach(size=>{
+    ps.pitches.forEach(p=>{
+      PropBrands.forEach(pb=>{
+        pb.series.forEach(ser=>{
+          if(ps.cls==="whoop" && pb.brand!=="HQ") return;
+          if(ps.cls==="x" && pb.brand!=="HQ") return;
+          PropPool.push({ name:`${pb.brand} ${size}${size==='whoop'?'':'"'} ${ser} ${p}`, class:ps.cls, w_set:ps.w, price:ps.price, tags:ps.tags });
+        });
+      });
+    });
+  });
+});
+
+/* Stacks */
+let StackPool=[
+  {name:"Diatone Mamba F405 Mini 20x20 40A",class:"3to4",w:32,price:45,tier:"budget"},
+  {name:"SpeedyBee F7 V4 + 50A",class:"5",w:46,price:70,tier:"mid"},
+  {name:"Mamba F722 + 50A",class:"5",w:45,price:60,tier:"mid"},
+  {name:"iFlight Blitz F7 + 55A",class:"5",w:50,price:85,tier:"mid"},
+  {name:"Holybro Kakute F7 Mini + Tekko32 45A",class:"3to4",w:40,price:85,tier:"mid"},
+  {name:"Holybro Kakute H7 + 55A",class:"5",w:55,price:120,tier:"premium"},
+  {name:"Foxeer F722 + Reaper 45A",class:"5",w:46,price:95,tier:"mid"},
+  {name:"KISS F7 + 48A 4-in-1",class:"5",w:48,price:150,tier:"premium"},
+  {name:"Airbot F7 + Tekko32 50A",class:"5",w:48,price:95,tier:"mid"},
+  {name:"GEPRC SPAN F722 + 50A",class:"5",w:46,price:85,tier:"mid"}
+];
+StackPool = StackPool.flatMap(s=>[s,{...s,name:s.name+" (Rev B)",price:s.price+5},{...s,name:s.name+" (Lite)",price:s.price-5,w:s.w-2}]);
+
+/* FPV systems */
+const FPVPool=[
+  {name:"RunCam Phoenix 2 + Rush Tank II",class:"any",w:18,price:55,type:"analog"},
+  {name:"Caddx Vista + Nebula Pro",class:"any",w:28,price:145,type:"hd_mid"},
+  {name:"Walksnail Avatar V2",class:"any",w:28,price:150,type:"hd_mid"},
+  {name:"Walksnail Avatar HD Pro",class:"any",w:29,price:170,type:"hd_mid"},
+  {name:"HDZero Freestyle V2",class:"any",w:28,price:160,type:"hd_mid"},
+  {name:"DJI O3 Air Unit",class:"any",w:36,price:210,type:"hd_ultra"},
+  {name:"DJI Air Unit (v1)",class:"any",w:38,price:160,type:"hd_mid"}
+];
+
+/* Batteries */
+const BatteryCaps=[["1S 450mAh HV","micro",13,6.5],["1S 550mAh HV","micro",15,7],["2S 650mAh","3to4",48,10],["2S 850mAh","3to4",60,12],["3S 650mAh","3to4",60,13],["3S 850mAh","3to4",70,15],["4S 1300mAh 100C","5",160,22],["4S 1500mAh 100C","5",170,24],["6S 1100mAh 100C","5",200,28],["6S 1200mAh 100C","5",205,30],["6S 1300mAh 100C","5",210,31],["6S 1500mAh 100C","5/6",230,35],["6S 2150mAh","6/7",320,45],["Li-ion 6S 3000mAh (21700)","7",420,52],["LR 6S 1800–2200mAh","7",340,48],["8–12S pack (X)","x",900,140]];
+const BatteryBrands=["CNHL","GNB","Tattu","Graphene","Ovonic"];
+let BatteryPool=[]; BatteryCaps.forEach(([name,cls,w,price])=>BatteryBrands.forEach(b=>BatteryPool.push({name:`${b} ${name}`,class:cls,w,price})));
+
+/* Pool count (1000+) */
+const POOL_COUNT = FramePool.length + MotorPool.length + PropPool.length + StackPool.length + FPVPool.length + BatteryPool.length;
+
+/* ===================== Sizing, cost & selection utilities ===================== */
+function miscAllowance(size){ return size==='micro'?Archetype.misc.micro : size==='3to4'?Archetype.misc.small : size==='5to7'?Archetype.misc.five : size==='xclass'?Archetype.misc.xclass : 30; }
+function miscPrice(size){ return size==='micro'?Archetype.misc.price.micro : size==='3to4'?Archetype.misc.price.small : size==='5to7'?Archetype.misc.price.five : size==='xclass'?Archetype.misc.price.xclass : 15; }
+function estimateTotals(comp,size){
+  const w={frame:comp.frame.w||0,motors:(comp.motors.w_each||0)*4,props:comp.props.w_set||0,stack:comp.stack.w||0,fpv:comp.fpv.w||0,battery:comp.battery.w||0,misc:miscAllowance(size)};
+  const p={frame:comp.frame.price||0,motors:(comp.motors.price_each||0)*4,props:comp.props.price||0,stack:comp.stack.price||0,fpv:comp.fpv.price||0,battery:comp.battery.price||0,misc:miscPrice(size)};
+  const totalW=Object.values(w).reduce((a,b)=>a+b,0), totalP=Object.values(p).reduce((a,b)=>a+b,0);
+  return {weight:w,price:p,totalW,totalP};
+}
+function sizeClass(size){ if(size==='micro') return 'micro'; if(size==='3to4') return '3to4'; if(size==='5to7') return '5'; if(size==='xclass') return 'x'; return '5'; }
+
+/* ===================== Pickers (filter + intent scoring) ===================== */
+function pickFrame(ans){
+  const sc=sizeClass(ans.size);
+  let cand=FramePool.filter(f=> sc==='micro'? (f.class==='micro'||f.class==='cine25') : sc==='3to4'? (f.class==='3to4'||f.class==='cine25') : sc==='5'? f.class==='5' : f.class==='x');
+  cand.sort((a,b)=>{
+    const score=x=>{
+      let s=0;
+      if(ans.env==='indoors' && x.type==='duct') s+=5;
+      if(ans.env==='open' && (x.type==='lr'||x.type==='cine')) s+=3;
+      if(ans.purpose==='racing' && x.type==='race') s+=4;
+      if(ans.purpose==='cinematic' && (x.type==='cine'||x.type==='lr')) s+=3;
+      if(ans.purpose==='freestyle' && x.type==='freestyle') s+=2;
+      s += (300 - Math.min(300, x.w))/300;
+      return s;
+    };
+    return score(b)-score(a);
+  });
+  const top=cand[0];
+  const arch = sc==='micro' ? (ans.env==='indoors'?Archetype.frames.micro_duct25:Archetype.frames.micro_whoop)
+             : sc==='3to4' ? (ans.env==='indoors'||ans.purpose==='cinematic'?Archetype.frames.micro_duct25:Archetype.frames.three_inch)
+             : sc==='5' ? (ans.purpose==='racing'?Archetype.frames.five_race:Archetype.frames.five_freestyle)
+             : Archetype.frames.xclass;
+  return {name:top.name,w:top.w||arch.w,price:top.price||arch.price};
+}
+function pickMotors(ans){
+  const sc=sizeClass(ans.size);
+  let cand=MotorPool.filter(m=> sc==='micro'?m.class==='micro': sc==='3to4'?m.class==='3to4': sc==='5'?m.class==='5': m.class==='x');
+  cand.sort((a,b)=>{
+    const score=x=>{
+      let s=0;
+      if(ans.purpose==='racing' && x.tags.includes('race')) s+=4;
+      if(ans.purpose==='cinematic' && x.tags.includes('cinematic')) s+=2.5;
+      if(ans.env==='open' && x.tags.includes('wind')) s+=1.5;
+      if(sc==='5' && ans.speed==='max' && x.kv>=2200) s+=2;
+      if(sc==='5' && ans.speed==='stable' && x.kv<=1950) s+=1.5;
+      if(sc==='5' && ans.speed==='balanced' && x.kv>=1850 && x.kv<=2100) s+=1.2;
+      s += (60 - Math.min(60, x.w_each))/60;
+      return s;
+    };
+    return score(b)-score(a);
+  });
+  const top=cand[0];
+  const arch = sc==='micro'?Archetype.motors.micro_1s : sc==='3to4'?Archetype.motors.micro_2s3s : sc==='5'?(ans.purpose==='racing'?Archetype.motors.five_race:Archetype.motors.five_freestyle) : Archetype.motors.xclass;
+  return {name:top.name,w_each:top.w_each||arch.w_each,price_each:top.price_each||arch.price_each};
+}
+function pickProps(ans){
+  const sc=sizeClass(ans.size);
+  let cand=PropPool.filter(p=> sc==='micro'? (p.class==='whoop'||p.class==='cine25') : sc==='3to4'? (p.class==='cine25'||p.class==='3to4') : sc==='5'? p.class==='5' : p.class==='x');
+  cand.sort((a,b)=>{
+    const score=x=>{
+      let s=0;
+      if(ans.purpose==='racing' && x.name.match(/51477|51466|Hulkie/)) s+=3;
+      if(ans.purpose==='cinematic' && x.name.match(/S3|S4|P3/)) s+=2.5;
+      if(ans.env==='open' && (x.name.includes('5236')||x.class==='7')) s+=2;
+      if(ans.env==='indoors' && x.class==='cine25') s+=3;
+      return s;
+    };
+    return score(b)-score(a);
+  });
+  const top=cand[0];
+  const arch = ans.env==='indoors' ? (sc==='micro'?Archetype.props.cine25:Archetype.props.whoop)
+             : sc==='micro'?Archetype.props.whoop
+             : sc==='3to4'?Archetype.props.three
+             : sc==='5'? (ans.purpose==='racing'?Archetype.props.five_race:Archetype.props.five_smooth)
+             : Archetype.props.seven;
+  return {name:top.name,w_set:top.w_set||arch.w_set,price:top.price||arch.price};
+}
+function pickStack(ans){
+  const sc=sizeClass(ans.size);
+  let cand=StackPool.filter(s=> (sc==='micro'||ans.regs==='under')? (s.class==='3to4'||s.class==='micro') : sc==='3to4'? s.class==='3to4' : sc==='5'? s.class==='5' : s.class==='5');
+  cand.sort((a,b)=>{
+    const score=x=>{
+      let s=0;
+      if(ans.budget==='tier1' && x.tier==='budget') s+=4;
+      if(ans.budget==='tier2' && x.tier!=='premium') s+=2.5;
+      if(ans.budget==='tier3') s+= (x.tier==='premium'?1:2);
+      return s;
+    };
+    return score(b)-score(a);
+  });
+  const top=cand[0];
+  const arch = (ans.size==='micro'||ans.regs==='under')?Archetype.stacks.micro_aio : ans.budget==='tier1'?Archetype.stacks.mamba_20 : Archetype.stacks.f7_std;
+  return {name:top.name,w:top.w||arch.w,price:top.price||arch.price};
+}
+function pickFPV(ans){
+  let pref=ans.fpv;
+  if(ans.regs==='under' && pref==='high') pref='medium';
+  if(ans.regs==='under' && ans.size==='micro' && pref!=='low') pref='medium';
+  if(pref==='medium' && ans.purpose==='racing'){ const h=FPVPool.find(x=>x.name.includes('HDZero')); if(h) return {...h}; }
+  if(pref==='medium' && ans.env==='open'){ const a=FPVPool.find(x=>x.name.includes('Avatar HD Pro')); if(a) return {...a}; }
+  const type=pref==='low'?'analog':(pref==='high'?'hd_ultra':'hd_mid');
+  const pick=FPVPool.find(x=>x.type===type)||FPVPool[0];
+  const arch=type==='analog'?Archetype.fpv.analog:(type==='hd_ultra'?Archetype.fpv.hd_ultra:Archetype.fpv.hd_mid);
+  return {name:pick.name,w:pick.w||arch.w,price:pick.price||arch.price};
+}
+function pickBattery(ans){
+  const sc=sizeClass(ans.size);
+  let cand=BatteryPool.filter(b=>{
+    if(ans.regs==='under') return (sc==='micro' && b.class==='micro') || (sc!=='micro' && b.class==='3to4');
+    if(sc==='micro') return b.class==='micro';
+    if(sc==='3to4') return b.class==='3to4';
+    if(sc==='5') return b.class==='5' || b.class==='5/6' || b.class==='6';
+    if(sc==='x') return b.class==='x';
+  });
+  cand.sort((a,b)=>{
+    const score=x=>{
+      let s=0;
+      if(ans.purpose==='racing' && /6S 1100|6S 1200|6S 1300|4S 1300/.test(x.name)) s+=2.5;
+      if(ans.purpose==='cinematic' && /6S 1500|Li-ion/.test(x.name)) s+=2;
+      if(ans.env==='open' && /2150|Li-ion|LR/.test(x.name)) s+=2;
+      if(ans.regs==='under') s += (100 - Math.min(100,x.w))/100;
+      return s;
+    };
+    return score(b)-score(a);
+  });
+  const top=cand[0];
+  const arch = ans.regs==='under' ? (sc==='micro'?Archetype.batteries.oneS:Archetype.batteries.twoS)
+             : sc==='micro'?Archetype.batteries.oneS
+             : sc==='3to4'? (ans.purpose==='cinematic'?Archetype.batteries.twoS:Archetype.batteries.threeS)
+             : (ans.purpose==='racing'||ans.speed==='max') ? Archetype.batteries.sixS_1200 : Archetype.batteries.fourS_1300;
+  return {name:top.name,w:top.w||arch.w,price:top.price||arch.price};
+}
+function chooseComponents(ans){
+  const frame=pickFrame(ans);
+  const motors=pickMotors(ans);
+  const props=pickProps(ans);
+  const stack=pickStack(ans);
+  const fpv=pickFPV(ans);
+  const battery=pickBattery(ans);
+  const comp={frame,motors,props,stack,fpv,battery};
+  const est=estimateTotals(comp, ans.size);
+  return {components:comp, est};
+}
+
+/* ===================== Optimisers & budget enforcement ===================== */
+function optimiseSub250(ans, base){
+  let a={...ans};
+  let {components, est} = base || chooseComponents(a);
+  if(a.regs!=='under') return {ans:a,components,est};
+  if(est.totalW<=250) return {ans:a,components,est};
+  if(!components.fpv.name.toLowerCase().includes('runcam')){
+    components.fpv={name:"RunCam Phoenix 2 + Rush Tank II",w:Archetype.fpv.analog.w,price:Archetype.fpv.analog.price};
+    est=estimateTotals(components,a.size);
+  }
+  if(est.totalW>250 && a.size!=='micro'){
+    a.size='micro';
+    ({components,est}=chooseComponents({...a,regs:'under'}));
+  }
+  return {ans:a,components,est};
+}
+
+/* Strict enforcer with cap + overCap flag */
+function enforceBudget(ans, comp, est, cap){
+  if(est.totalP <= cap) return {components:comp, est, overCap:false};
+
+  let c = JSON.parse(JSON.stringify(comp));
+  let updated = est;
+  const sc=sizeClass(ans.size);
+
+  // 1) O3 -> mid HD
+  if(c.fpv.name.includes('DJI O3')){
+    const mid = FPVPool.find(x=>x.type==='hd_mid' && !x.name.includes('Pro')) || FPVPool.find(x=>x.type==='hd_mid');
+    if(mid){ c.fpv = {name:mid.name, w:mid.w, price:mid.price}; updated = estimateTotals(c, ans.size); }
+    if(updated.totalP <= cap) return {components:c, est:updated, overCap:false};
+  }
+  // 2) Any HD -> Analog
+  if(!/RunCam|Analog|Rush/i.test(c.fpv.name)){
+    const an = FPVPool.find(x=>x.type==='analog');
+    if(an){ c.fpv = {name:an.name, w:an.w, price:an.price}; updated = estimateTotals(c, ans.size); }
+    if(updated.totalP <= cap) return {components:c, est:updated, overCap:false};
+  }
+  // 3) Cheaper stack
+  const cheapStack = StackPool.slice().sort((a,b)=>a.price-b.price)[0];
+  if(cheapStack){ c.stack = {name:cheapStack.name, w:cheapStack.w, price:cheapStack.price}; updated = estimateTotals(c, ans.size); }
+  if(updated.totalP <= cap) return {components:c, est:updated, overCap:false};
+
+  // 4) Cheaper frame
+  const cheapFrame = FramePool.slice().sort((a,b)=>a.price-b.price)[0];
+  if(cheapFrame){ c.frame = {name:cheapFrame.name, w:cheapFrame.w, price:cheapFrame.price}; updated = estimateTotals(c, ans.size); }
+  if(updated.totalP <= cap) return {components:c, est:updated, overCap:false};
+
+  // 5) Cheaper motors
+  const cheapMotor = MotorPool
+    .filter(m=> sc==='micro'?m.class==='micro': sc==='3to4'?m.class==='3to4': sc==='5'?m.class==='5': m.class==='x')
+    .sort((a,b)=>a.price_each-b.price_each)[0];
+  if(cheapMotor){ c.motors = {name:cheapMotor.name, w_each:cheapMotor.w_each, price_each:cheapMotor.price_each}; updated = estimateTotals(c, ans.size); }
+  if(updated.totalP <= cap) return {components:c, est:updated, overCap:false};
+
+  // 6) Cheaper battery
+  const cheapBatt = BatteryPool
+    .filter(b=> sc==='micro'?b.class==='micro': sc==='3to4'?b.class==='3to4': sc==='5'?(b.class==='5'||b.class==='5/6'||b.class==='6'): b.class==='x')
+    .sort((a,b)=>a.price-b.price)[0];
+  if(cheapBatt){ c.battery = {name:cheapBatt.name, w:cheapBatt.w, price:cheapBatt.price}; updated = estimateTotals(c, ans.size); }
+  if(updated.totalP <= cap) return {components:c, est:updated, overCap:false};
+
+  return {components:c, est:updated, overCap:true};
+}
+
+/* ===================== Three build strategies ===================== */
+function build_overall(ans){
+  let base=chooseComponents(ans);
+  ({ans,components:base.components,est:base.est}=optimiseSub250(ans, base));
+  const cap = BUDGET_CAPS[ans.budget];
+  const b = enforceBudget(ans, base.components, base.est, cap);
+  return {label:"Overall best", components:b.components, est:b.est, overCap:b.overCap};
+}
+function build_performance(ans){
+  let perfAns={...ans};
+  let base=chooseComponents(perfAns);
+  if(perfAns.fpv!=='low'){ const o3=FPVPool.find(x=>x.type==='hd_ultra'); base.components.fpv={name:o3.name,w:o3.w,price:o3.price}; }
+  if(sizeClass(perfAns.size)==='5'){ const race=PropPool.find(p=>p.class==='5' && /51477|51466/.test(p.name)); if(race) base.components.props={name:race.name,w_set:race.w_set,price:race.price}; }
+  const prem=StackPool.find(s=>s.tier==='premium' && (sizeClass(perfAns.size)==='5'?s.class==='5':true));
+  if(prem) base.components.stack={name:prem.name,w:prem.w,price:prem.price};
+  base.est=estimateTotals(base.components, perfAns.size);
+  ({ans:perfAns,components:base.components,est:base.est}=optimiseSub250(perfAns, base));
+  const cap = BUDGET_CAPS[perfAns.budget];
+  const b = enforceBudget(perfAns, base.components, base.est, cap);
+  return {label:"Best performance", components:b.components, est:b.est, overCap:b.overCap};
+}
+function build_budget(ans){
+  let budAns={...ans, fpv: ans.fpv==='low'? 'low':'medium'};
+  let base=chooseComponents(budAns);
+  const analog=FPVPool.find(x=>x.type==='analog'); base.components.fpv={name:analog.name,w:analog.w,price:analog.price};
+  const cheapS=StackPool.slice().sort((a,b)=>a.price-b.price)[0]; base.components.stack={name:cheapS.name,w:cheapS.w,price:cheapS.price};
+  const cheapF=FramePool.slice().sort((a,b)=>a.price-b.price)[0]; base.components.frame={name:cheapF.name,w:cheapF.w,price:cheapF.price};
+  const sc=sizeClass(budAns.size);
+  const cheapM=MotorPool.filter(m=> sc==='micro'?m.class==='micro': sc==='3to4'?m.class==='3to4': sc==='5'?m.class==='5': m.class==='x').sort((a,b)=>a.price_each-b.price_each)[0];
+  base.components.motors={name:cheapM.name,w_each:cheapM.w_each,price_each:cheapM.price_each};
+  base.est=estimateTotals(base.components, budAns.size);
+  ({ans:budAns,components:base.components,est:base.est}=optimiseSub250(budAns, base));
+  const cap = BUDGET_CAPS[budAns.budget];
+  const b = enforceBudget(budAns, base.components, base.est, cap);
+  return {label:"Most budget friendly", components:b.components, est:b.est, overCap:b.overCap};
+}
+
+/* ===================== Conflicts & Detailed Reasons ===================== */
+function checkConflicts(ans, est){
+  const issues=[];
+  if(ans.regs==='under' && (ans.size==='5to7'||ans.size==='xclass')) issues.push('Sub-250 g conflicts with 5–7" or X-class. Size may be adjusted by the optimiser.');
+  if(ans.regs==='under' && est.totalW>250) issues.push(`Estimated AUW ${Math.round(est.totalW)} g still exceeds sub-250 g.`);
+  if(ans.size==='xclass' && ans.fpv!=='low') issues.push('X-class commonly runs analog for latency/weight; HD may be impractical.');
+  return issues;
+}
+
+/* === Reason helpers === */
+function scFromSize(size){ return size==='micro'?'micro': size==='3to4'?'3to4': size==='5to7'?'5': size==='xclass'?'x':'5'; }
+function parseKV(name){ const m = name.match(/(\d{3,5})\s*KV/i); return m?+m[1]:null; }
+function motorStatorHint(name){
+  if(/(2207|2306)/.test(name)) return '5″ torque class (2207/2306) for strong mid-throttle authority';
+  if(/(1505|1507|1404)/.test(name)) return '3–4″ stator for micros: efficient yet punchy';
+  if(/(2808|2806\.5|2507)/.test(name)) return '6–7″ stator for long-range torque and bigger props';
+  if(/(4112|4114)/.test(name)) return 'X-Class stator for very large props and high inertia';
+  return 'stator size matched to prop class';
+}
+function kvCellHint(kv, size){
+  if(size==='5'){
+    if(kv && kv<=1950) return 'KV suits 6S on 5″ (efficiency + smooth control)';
+    if(kv && kv>=2200) return 'KV suits 4S on 5″ (snappier response)';
+    return 'KV in the balanced window for 5″';
+  }
+  if(size==='3to4') return 'KV matched for 2–4S micros (responsive without excess current)';
+  if(size==='micro') return 'High KV for 1S/2S whoops, maintains authority on tiny props';
+  if(size==='x') return 'Low KV appropriate for large, high-voltage setups';
+  return 'KV chosen for the intended cell count';
+}
+function frameStyle(name){
+  if(/CineLog|Pavo|Protek/i.test(name)) return 'ducted cinewhoop for indoor safety and prop protection';
+  if(/Floss/i.test(name)) return 'ultra-light race geometry to reduce drag and inertia';
+  if(/Apex|Marmotte|AOS|Mark5|Master 5|QAV|CL1|Nazgul/i.test(name)) return 'stiff freestyle frame to suppress vibrations and improve tune';
+  if(/Chimera7|AOS 7/i.test(name)) return 'long-range frame prioritising endurance and wind stability';
+  if(/Meteor|Mobula/i.test(name)) return 'micro whoop layout ideal for tight spaces and low mass';
+  return 'frame geometry aligned to your use-case';
+}
+function propIntent(name){
+  if(/51477|51466|Hulkie/i.test(name)) return 'aggressive 5″ race prop for top-end speed and bite';
+  if(/5236/i.test(name)) return 'wind-friendly 5.2″-style prop for open areas';
+  if(/S3|S4|P3/i.test(name)) return 'smooth 5″ prop for better throttle linearity and footage';
+  if(/7x3\.5|7035/i.test(name)) return 'efficient 7″ prop to extend range and cruise time';
+  if(/D76|ducted/i.test(name)) return 'ducted prop for cinewhoops: safer and more stable in close quarters';
+  if(/whoop|40|51/i.test(name)) return 'tiny whoop props for safe indoor flying';
+  return 'prop pitch chosen for your speed vs. efficiency preference';
+}
+function stackTier(name){
+  if(/KISS|H7/i.test(name)) return 'premium-tier FC/ESC for clean signals and overhead';
+  if(/F7/i.test(name)) return 'F7 processor with ample UARTs and good filtering';
+  if(/F405|Mini/i.test(name)) return 'compact, value stack sized for micros/3–4″';
+  return 'stack matched to current demands and size';
+}
+function fpvWhy(name, pref, env, purpose){
+  if(/O3|DJI O3/i.test(name)) return 'best-in-class image and onboard stabilisation for crisp footage';
+  if(/HDZero/i.test(name)) return 'low-latency digital HD suited to racing lines and gates';
+  if(/Avatar/i.test(name)) return 'good penetration/clarity for open spaces without O3 weight';
+  if(/RunCam|Analog|Rush/i.test(name)) return 'analog keeps weight/latency down and simplifies sub-250 builds';
+  if(pref==='high') return 'prioritised image fidelity as requested';
+  if(pref==='medium' && purpose==='racing') return 'digital HD with latency kept in check for racing';
+  if(pref==='medium' && env==='open') return 'digital HD tuned for range and penetration in open areas';
+  return 'video system aligned with your quality vs. weight goals';
+}
+function batteryWhy(name, regs, purpose, env){
+  if(/Li-?ion|21700/i.test(name)) return 'Li-ion pack for long-range cruise and extended flights';
+  if(/6S 15|6S 1300|6S 1200|6S 1100|4S 1300/i.test(name) && purpose==='racing') return 'high-C pack for punch and reduced sag under bursts';
+  if(/2150/i.test(name)) return 'larger 6S capacity to buffer wind and longer lines in open areas';
+  if(/1S|2S|3S/i.test(name) && regs==='under') return 'lighter voltage/capacity to help meet sub-250 g while staying flyable';
+  return 'capacity chosen to balance weight and flight time';
+}
+function priceNote(p){ return p>0?`Good value at ~£${p.toFixed(0)} vs. similar class.`:'Priced in line with class.'; }
+
+function buildReasonsDetailed(ans, c, focus){
+  const sizeC = scFromSize(ans.size);
+  const kv = parseKV(c.motors.name);
+  const reasons = [];
+  reasons.push(['Frame', `${c.frame.name}: ${frameStyle(c.frame.name)}. Weight ~${Math.round(c.frame.w)} g supports ${ans.purpose}; ${ans.env==='indoors'?'compact footprint for tight gaps':'stiffness for cleaner footage'}. ${priceNote(c.frame.price)}`]);
+  reasons.push(['Motors', `${c.motors.name}: ${motorStatorHint(c.motors.name)}. ${kv?kvCellHint(kv, sizeC):'KV chosen for cells/prop size'}. Focus: ${
+    focus==='performance' ? 'prioritises burst and top speed'
+    : focus==='budget' ? 'keeps current draw and cost sensible'
+    : 'balances torque, efficiency and response'
+  }.`]);
+  reasons.push(['Props', `${c.props.name}: ${propIntent(c.props.name)} — fits ${ans.purpose} and ${ans.env==='open'?'open-area wind':'your flying spaces'}.`]);
+  reasons.push(['FC/ESC', `${c.stack.name}: ${stackTier(c.stack.name)}. Current rating sized for ${ans.size==='5to7'?'5–7″':''}${ans.size==='3to4'?'3–4″':''}${ans.size==='micro'?'whoop/micro':''} props and your speed (${ans.speed}).`]);
+  reasons.push(['FPV', `${c.fpv.name}: ${fpvWhy(c.fpv.name, ans.fpv, ans.env, ans.purpose)}${
+    focus==='performance' && /O3/.test(c.fpv.name) ? ' (emphasis on image quality)' :
+    focus==='budget' && /RunCam|Analog/.test(c.fpv.name) ? ' (saves weight and money)' : ''
+  }.`]);
+  reasons.push(['Battery', `${c.battery.name}: ${batteryWhy(c.battery.name, ans.regs, ans.purpose, ans.env)}. Weight ~${Math.round(c.battery.w)} g keeps CG reasonable${ans.regs==='under'?' and helps <250 g target':''}.`]);
+  reasons.push(['Build focus', focus==='performance' ? 'Performance variant nudges props, motors, stack, and FPV for speed/clarity while keeping handling predictable.'
+                        : focus==='budget' ? 'Budget variant prefers proven value parts without crippling performance.'
+                        : 'Overall variant balances agility, image quality, durability, and cost for broad use.']);
+  return reasons;
+}
+
+/* ===================== UI Rendering ===================== */
+function kv(label,value,notes){ return `<div class="kv"><div><strong>${label}</strong></div><div>${value}${notes?`<div class="small">${notes}</div>`:''}</div></div>`; }
+function renderProfile(ans){
+  const labels = [
+    ['Budget (complete build)', ({tier1:'<£200',tier2:'£200–£500',tier3:'£500–£1000'})[ans.budget]],
+    ['Build complexity', ({rtf:'No experience',pnp:'Some experience',custom:'Very experienced'})[ans.complexity]],
+    ['Speed priority', ({max:'Maximum top speed',balanced:'Balanced',stable:'Stability / smoothness'})[ans.speed]],
+    ['Frame size', ({micro:'<150 mm (micro)','3to4':'150–250 mm (3–4″)','5to7':'250–450 mm (5–7″)',xclass:'>450 mm (X-class)'})[ans.size]],
+    ['Handling style', ({agile:'Agility / quick response',smooth:'Smooth / cinematic'})[ans.handling]],
+    ['FPV video quality', ({low:'Low (Analog)',medium:'Medium (Digital HD)',high:'High (Digital Ultra-HD)'})[ans.fpv]],
+    ['Regulatory cap', ({ok:'>250 g OK',under:'Must stay <250 g'})[ans.regs]],
+    ['Pilot skill', ({beginner:'Beginner',intermediate:'Intermediate',advanced:'Advanced'})[ans.skill]],
+    ['Primary purpose', ({racing:'Racing',freestyle:'Freestyle',cinematic:'Cinematic filming'})[ans.purpose]],
+    ['Flying environment', ({indoors:'Indoors / tight',parks:'Parks / fields',open:'Open / mountains / coast'})[ans.env]]
+  ];
+  return labels.map(([q,a])=>`<div class="row"><div class="q">${q}</div><div class="a">${a}</div></div>`).join('');
+}
+
+const state={ lastBuild:null, builds:null, ans:null };
+
+function renderBuild(buildObj, focus){
+  const c=buildObj.components;
+
+  // parts
+  $('#partsGrid').innerHTML = [
+    kv('Frame', c.frame.name),
+    kv('Motors', c.motors.name),
+    kv('Props', c.props.name),
+    kv('Flight Controller / ESC', c.stack.name),
+    kv('FPV System', c.fpv.name),
+    kv('Battery', c.battery.name)
+  ].join('');
+
+  // breakdown
+  const b=buildObj.est.weight, p=buildObj.est.price;
+  const lines=[['Frame',b.frame,p.frame],['Motors (x4)',b.motors,p.motors],['Props (set)',b.props,p.props],['FC/ESC',b.stack,p.stack],['FPV system',b.fpv,p.fpv],['Battery',b.battery,p.battery],['Misc (wires/TPU/RX)',b.misc,p.misc]];
+  $('#breakGrid').innerHTML =
+    `<div class="line hdr"><div>Component</div><div>Weight (g)</div><div>Est. Price (£)</div></div>`+
+    lines.map(([n,w,pr])=>`<div class="line"><div>${n}</div><div>${Math.round(w)}</div><div>£${pr.toFixed(2)}</div></div>`).join('')+
+    `<div class="total-line"><div><strong>Total</strong></div><div><strong>${Math.round(buildObj.est.totalW)} g</strong></div><div><strong>£${buildObj.est.totalP.toFixed(2)}</strong></div></div>`;
+
+  // conflicts + budget-cap warning (specific to current build)
+  const cap = BUDGET_CAPS[state.ans.budget];
+  const confs = checkConflicts(state.ans, buildObj.est);
+  if(buildObj.overCap){
+    confs.unshift(`Estimated price £${buildObj.est.totalP.toFixed(2)} exceeds your selected budget cap of £${cap}. We tried lower-cost alternatives automatically; there may be no further swaps that meet your other requirements.`);
+  }
+  $('#conflicts').innerHTML = confs.length
+    ? confs.map(c=>`<div class="warn">${c}</div>`).join('')
+    : `<div class="ok">Build generated within your selected constraints.</div>`;
+
+  // weight note + reasons
+  $('#weightNote').textContent = (state.ans.regs==='under')
+    ? 'Sub-250 g target may switch to analog, lighter packs, and smaller frames.'
+    : '';
+  const reasons = buildReasonsDetailed(state.ans, c, focus);
+  $('#whyList').innerHTML = reasons.map(([k,v])=>`<div class="row"><div class="q">${k}</div><div class="a">${v}</div></div>`).join('');
+}
+
+function buildAllVariants(ans){
+  const overall = build_overall(ans);
+  const performance = build_performance(ans);
+  const budget = build_budget(ans);
+  return {overall, performance, budget};
+}
+
+function buildRecommendations(){
+  const ans={
+    budget: $('#budget').value, complexity: $('#complexity').value, speed: $('#speed').value,
+    size: $('#size').value, handling: $('#handling').value, fpv: $('#fpv').value, regs: $('#regs').value,
+    skill: $('#skill').value, purpose: $('#purpose').value, env: $('#env').value
+  };
+
+  state.ans=ans;
+  const builds = buildAllVariants(ans);
+  state.builds = builds;
+
+  $('#out').style.display='block';
+  $('#optBadge').style.display = ans.regs==='under' ? 'inline-block' : 'none';
+  $('#poolBadge').textContent = `${POOL_COUNT.toLocaleString()} options considered`;
+
+  // Initial profile + first render; warnings will be drawn inside renderBuild
+  $('#profileList').innerHTML = renderProfile(ans);
+  $('#focusWrap').style.display='block';
+  $('#buildFocus').value='overall';
+  renderBuild(builds.overall, 'overall');
+  state.lastBuild = {focus:'overall', ...builds.overall, poolCount: POOL_COUNT};
+}
+
+/* ===================== Events ===================== */
+$('#buildBtn').addEventListener('click', buildRecommendations);
+$('#buildFocus').addEventListener('change', (e)=>{
+  const focus=e.target.value;
+  const b = state.builds[focus];
+  renderBuild(b, focus); // re-renders warnings for this build
+  state.lastBuild = {focus, ...b, poolCount: POOL_COUNT};
+});
+$('#resetBtn').addEventListener('click', ()=>{ $('#out').style.display='none'; });
+</script>
+
+<!-- EASY-REMOVE WATERMARK OVERLAY -->
+<div id="wm" class="watermark" aria-hidden="true"></div>
+</body>
+</html>
